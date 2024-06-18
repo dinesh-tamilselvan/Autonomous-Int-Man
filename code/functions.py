@@ -368,8 +368,17 @@ def storedata(veh_object, train_sim_num, _sim, _train_iter_num, version):
     dbfile.close()
     # print("stored", veh_object.id)  # Uncomment this line if you want to print a message
 
-""" 
 
+def store_signal_override(signal, override, version, arr, train_sim_num, _sim, _train_iter_num):
+	obj = {}
+	obj["signal"] = signal
+	obj["override"] = override
+	dbfile = open(f'../data_version/version_{int(version)}/arr_{arr}/test_homo_stream/train_sim_{train_sim_num}/train_iter_{_train_iter_num}/pickobj_sim_{_sim}/sig_ovr', 'wb')
+	print(f'../data_version/version_{int(version)}/arr_{arr}/test_homo_stream/train_sim_{train_sim_num}/train_iter_{_train_iter_num}/pickobj_sim_{_sim}/sig_ovr')
+	pickle.dump(obj, dbfile)
+	dbfile.close()
+	
+""" 
 def snapdata(veh_object, train_sim_num, _sim, _train_iter_num):
     m = {}
     m[veh_object.id] = veh_object

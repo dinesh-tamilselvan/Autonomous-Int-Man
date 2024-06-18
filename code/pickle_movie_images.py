@@ -200,6 +200,8 @@ def plot_ellipse(veh_object, veh_id, center_pos_on_lane, lane, tc_flag, dict, fl
 def func(heuristic):
 
     final = []
+    signal = {}
+    override = {}
 
     arr_ =  0.1
     sim_ = 1
@@ -215,10 +217,13 @@ def func(heuristic):
         file = open(f"{file_path}/{c}", "rb")
         object_file = pickle.load(file)
         file.close()
-        final.append(object_file[int(c)])
-        # print("last pos:", object_file[int(c)].p_traj[-1])
-
-
+        if c == "sig_ovr":
+            signal = object_file["signal"]
+            override = object_file["override"]
+        else:            
+            final.append(object_file[int(c)])
+            # print("last pos:", object_file[int(c)].p_traj[-1])
+    
     tend = 300
 
     tfull = np.arange(0, tend, round(1.0, 1))
@@ -263,8 +268,8 @@ def func(heuristic):
                     pass
 
                     plot_ellipse(i, i.id, (i.p_traj[t_ind]-(i.length/2)), i.lane, i.curr_set[t], i.global_sig) #i.tc_flag_time[t])
-                    dict = i.global_sig[t]
-                    ovr_lane = i.ovr_stat[t]
+                    # dict = i.global_sig[t]
+                    # ovr_lane = i.ovr_stat[t]
                     #print(i.global_sig, "signal value :" ,i.global_sig_val)
                     #exit()
 
@@ -274,14 +279,14 @@ def func(heuristic):
 
                     if (i.p_traj[t_ind] > i.intsize + i.length) and (i.p_traj[t_ind-1] <= i.intsize + i.length):
                         num_veh +=1
-
-                
+              
             except KeyError as e:
                 print(f"Error!: {e}")
                 pass
         
         ##### plot signals ######
-        
+        dict = signal[t]
+        ovr_lane = override[t]
         #print(f'{type(data_file.phase_dict.values())})
         plt.text(4, 5.5, f"{dict}",fontsize=12)
         plt.text(4, 5, f"{ovr_lane} OVR lane",fontsize=12)

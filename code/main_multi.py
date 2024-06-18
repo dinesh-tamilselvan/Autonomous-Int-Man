@@ -5,6 +5,7 @@ import time
 import copy
 import numpy as np
 from collections import deque
+from numpy.random import seed
 import matplotlib
 matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
@@ -39,6 +40,8 @@ def func(_args):
 	capture_snapshot_flag = 0
 	learning_flag = 0
 	max_rep_sim = 1
+	signal_ts = {key: None for key in range(1, data_file.max_sim_time+1)}
+	override_ts = {key: None for key in range(1, data_file.max_sim_time+1)}  
 
 	if data_file.rl_flag:
 
@@ -132,7 +135,9 @@ def func(_args):
 			### lane signal and time of previous change  ###
 
 			### start of simulation ###
+			data_file.max_sim_time = 500
 			while (time_track < (data_file.max_sim_time)+1):  
+				print(f'TIME={time_track}')
 				curr_time = time.time()
 				if (not data_file.real_time_spawning_flag):
 					if (functions.get_num_of_objects(sim_obj.done_veh) >= total_veh_in_simulation):
@@ -199,7 +204,6 @@ def func(_args):
 							assert v.sp_t == sim_obj.spawned_veh[lane][-1].sp_t, f'spawn time not properly exchanged'
 							n = len(sim_obj.unspawned_veh[lane])
 							print(f'spawned robot- ID:{v.id},time:{v.sp_t}, vel:{round(v.v0,2)} sim:{sim}, lane:{v.lane}, prioir:{v.priority}, process id:, {os.getpid()}')
-							if v.id == 2: exit()
 
 							# if pre_v != None: 
 							# 	print(f'values,time:{time_track} prev_pos: {pre_v.p_traj[-1]} ,curr_pos: {v.p0}, \n status:{functions.check_init_config(v, pre_v, time_track)}, prevID:{pre_v.id}, currID:{v.id}')
@@ -354,6 +358,9 @@ def func(_args):
 								sim_obj.spawned_veh[lane][iter].ovr_stat[time_track] = override_lane 
 					############# update veh and REF dict  with signal and time  ##################
 				### update current time###``
+				if not learning_flag:
+					signal_ts[time_track] = copy.deepcopy(dict_sig)
+					override_ts[time_track] = copy.deepcopy(override_lane)
 				time_track = round((time_track + data_file.dt), 1)
 				if learning_flag: pass
 					#print(f"arr_rate: {arr_rate_}, rep: {rep_sim}", "current time:", time_track, "sim:", sim, "train_iter:", train_iter,"size_buff",{(sys.getsizeof(agent.buffer.state_buffer)+ sys.getsizeof(agent.buffer.reward_buffer) + sys.getsizeof(agent.buffer.action_buffer) + sys.getsizeof(agent.buffer.next_state_buffer))/(1024*1024)}) #,"......", end="\r")
@@ -421,18 +428,22 @@ def func(_args):
 							"""
 							#print(f'insdie te db file')
 							###################################
+				
+				#Stoing Signal and Override Globally
+				if not learning_flag and rep_sim%1==0 and time_track == data_file.max_sim_time:
+					functions.store_signal_override(signal_ts, override_ts, version, _arr_rate_, train_sim, sim, train_iter)
+
 				### removed vehicles which have crossed the region of interest ###
 				#print(f"[END MAIN.PY]: one timestep time: {round(time.time() - curr_time, 3)}")
 				##############################
 			### end of simulation ###
     #### streamline ####
 
-
-
-
-
-
 if __name__ == '__main__':
+
+
+	def init_pool_processes():
+		seed()
 
 	arr_rates_to_sim = data_file.arr_rates_to_simulate  #The 10 diff values from 0.01 to 0.1
 	args = []
@@ -459,7 +470,7 @@ if __name__ == '__main__':
 					_train_iter_list = [int(sys.argv[2])]
 					version = float(sys.argv[3]) 
 					for _train_iter in _train_iter_list:
-						for _sim_num in range(1,11):  #11
+						for _sim_num in range(1,2):  #11
 							############################### edited ################ # each policy run at speicific arrival rate for 10 times to increase the samples.
 							for _train_sim in list(range(1,2)):   ##### edited############### 11 $#############################
 								for _arr_rate_ in arr_rates_to_sim:
@@ -470,8 +481,8 @@ if __name__ == '__main__':
 										with open(f"{file_path}") as f:
 											f.close()
 									except:
-										args.append([_train_iter, _sim_num, arr_rate_array_, _arr_rate_,version, _train_sim])
-					pool = Pool(18)
+										args.append([_train_iter, _sim_num, arr_rate_array_, _arr_rate_, version, _train_sim])
+					pool = Pool(18,initializer=init_pool_processes)
 					pool.map(func, args)
 				else:
 					_arr_rate_ = 0.08

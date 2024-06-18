@@ -184,6 +184,7 @@ def phases(alpha,id_list,phase):
  
 	#print(f"********************start:{data_file.phase_ref}")
 	for i in range(len(id_list)): dict_alpha[id_list[i]] = alpha[i]	
+	
 	phase_index = phase.index(max(phase))
 	dict_phase = data_file.phase_ref[phase_index]
  
